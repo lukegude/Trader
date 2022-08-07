@@ -1,10 +1,13 @@
-from exhange import Exchange
+from exchanges.exchange import Exchange
 import ccxt
+
+
 class BinanceAPI(Exchange):
     def __init__(self, exchange=None):
-        super().__init__()
+        super().__init__(exchange)
         self.exchange = exchange if exchange else ccxt.binanceus()
         self.exchange.apiKey = self.api
+        self.exchange.load_markets()
         self.exchange.secret = self.secret_api
         self.wallet = {'BTC': self.getBTCWallet(), 'USD': self.getUSDWallet()}
 
@@ -15,6 +18,5 @@ class BinanceAPI(Exchange):
         return self.exchange.fetch_balance()['USD']['free']
 
 
-
-b = BinanceAPI()
-print(b.wallet)
+if __name__ == '__main__':
+    b = BinanceAPI()
