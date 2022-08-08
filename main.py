@@ -1,8 +1,26 @@
+from pkgutil import get_data
 from exchanges.binance import BinanceAPI
+from PaperTrader import PaperTrader
 import joblib
 import os
 import pandas as pd
 import pandas_ta as ta
+import time
+import json
+
+
+class Timer():
+    def __init__(self):
+        self.start = None
+        self.time = None
+
+    def start_timer(self):
+        self.start = time.time()
+
+    def get_time(self):
+        self.time = time.time() - self.start
+        return self.time
+
 
 
 class Trader:
@@ -65,6 +83,21 @@ class Trader:
         df['THIRTY_CLOSE'] = df['close'].shift(-6)
         return df
 
+    def log_trade(prompt_list):
+        with open(os.getcwd() + '/trades.json', 'r+') as f:
+            data = json.load(f)
+            data['Trades'].append(prompt_list)
+            f.seek(0)
+            json.dump(data, f, indent=4)
+            f.truncate()
 
-t = Trader()
-t.get_stop_profit(t.predict_next_close(t.get_data()))
+    def start(self, paper = False):
+        if paper:
+            self.exchange_api = PaperTrader()
+            print('Loaded PaperTrader')
+        while True:
+            try:
+                df = self.get_data()
+
+            except Exception as e:
+                print(e)

@@ -40,6 +40,6 @@ class PaperTrader():
         self.wallet['USD'] = 0
 
 
-p = PaperTrader()
-p.buyOCO(p.getBTCPrice())
-print(p.wallet)
+# p = PaperTrader()
+# p.buyOCO(p.getBTCPrice())
+# print(p.wallet)

@@ -18,5 +18,18 @@ class BinanceAPI(Exchange):
         return self.exchange.fetch_balance()['USD']['free']
 
 
-if __name__ == '__main__':
-    b = BinanceAPI()
+params = {
+    'stopLoss': {
+        'type': 'limit',  # or 'market'
+        'price': 100.33,
+        'stopLossPrice': 101.25,
+    },
+    'takeProfit': {
+        'type': 'market',
+        'takeProfitPrice': 150.75,
+    }
+}
+
+
+# if __name__ == '__main__':
+#     b = BinanceAPI()
