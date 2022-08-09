@@ -1,4 +1,3 @@
-from pkgutil import get_data
 from exchanges.binance import BinanceAPI
 from PaperTrader import PaperTrader
 import joblib
@@ -22,7 +21,6 @@ class Timer():
         return self.time
 
 
-
 class Trader:
     def __init__(self, exchange=None):
         self.exchange_api = exchange if exchange else BinanceAPI()
@@ -36,17 +34,18 @@ class Trader:
         self.thirty_model = joblib.load(
             os.getcwd() + '/models/thirty_model.joblib')
 
-
-    def get_stop_profit(self,df):
+    def get_stop_profit(self, df):
         try:
-            profit = ((df['Average'].iloc[-1] / 100) * df['close'].iloc[-1]) + df['close'].iloc[-1]
-            stop_loss = min([df['5 Minutes'].iloc[-1], df['10 Minutes'].iloc[-1], df['20 Minutes'].iloc[-1], df['30 Minutes'].iloc[-1]])
+            profit = ((df['Average'].iloc[-1] / 100) *
+                      df['close'].iloc[-1]) + df['close'].iloc[-1]
+            stop_loss = min([df['5 Minutes'].iloc[-1], df['10 Minutes'].iloc[-1],
+                            df['20 Minutes'].iloc[-1], df['30 Minutes'].iloc[-1]])
             stop_loss = -abs(stop_loss)
-            stop_loss = ((stop_loss/100) * df['close'].iloc[-1]/100) + df['close'].iloc[-1]
+            stop_loss = ((stop_loss/100) *
+                         df['close'].iloc[-1]/100) + df['close'].iloc[-1]
             return profit, stop_loss
         except KeyError:
             print('ML model not ran')
-
 
     def predict_next_close(self, df):
         five_predictions = self.five_model.predict(
@@ -73,6 +72,14 @@ class Trader:
         df['datetime'] = pd.to_datetime(df['date'], unit='ms')
         df['MACD'] = ta.macd(df['close'], n_fast=12, n_slow=26,
                              n_sign=9)['MACDh_12_26_9']
+        df['macd_low'] = ta.macd(df['close'], n_fast=12, n_slow=26,
+                                 n_sign=9)['MACD_12_26_9']
+        df['macd_high'] = ta.macd(df['close'], n_fast=12, n_slow=26,
+                                  n_sign=9)['MACDs_12_26_9']
+        df['Trend'] = (df['macd_high'] <= 0) & (df['macd_low'] <= 0)
+        df['Trend'] = df['Trend'].map({True: 'Below', False: 'Above'})
+        df.drop(['macd_high', 'macd_low'], axis=1, inplace=True)
+        df['200EMA'] = ta.ema_indicator(df['close'], n=200)
         df['STOCHRSIk'] = ta.stochrsi(df['close'], n=14)['STOCHRSIk_14_14_3_3']
         df['STOCHRSId'] = ta.stochrsi(df['close'], n=14)['STOCHRSId_14_14_3_3']
         df['BandWidth'] = ta.bbands(df['close'], n=20, k=2)['BBB_5_2.0']
@@ -91,7 +98,7 @@ class Trader:
             json.dump(data, f, indent=4)
             f.truncate()
 
-    def start(self, paper = False):
+    def start(self, paper=False):
         if paper:
             self.exchange_api = PaperTrader()
             print('Loaded PaperTrader')
@@ -101,3 +108,8 @@ class Trader:
 
             except Exception as e:
                 print(e)
+
+
+if __name__ == '__main__':
+    trader = Trader()
+    trader.get_data()

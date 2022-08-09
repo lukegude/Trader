@@ -1,45 +1,42 @@
-import ccxt
-import time
+from binance.client import Client
+import os
+import json
 
 
 class PaperTrader():
-    """
-    PaperTrader is a simple trading bot that trades on the paper trading platform.\n\tparameters:\n\t\texchange: the exchange to trade on - default: BinanceUS\n\t\tamount: the amount of the symbol to trade
-    """
+    def __init__(self):
+        self.client = Client(self.GET_API_KEYS()[0], self.GET_API_KEYS()[1])
+        self.client.API_URL = 'https://testnet.binance.vision/api'
+        self.wallet = self.client.get_account()
 
-    def __init__(self, balance=84.67, exchange=None):
-        self.exchange = exchange if exchange else ccxt.binanceus()
-        self.wallet = {'BTC': 0, 'USD': balance}
+    def GET_API_KEYS(self):
+        # Open config/personal_config.json
+        with open(os.getcwd() + '/config/personal_config.json') as json_file:
+            data = json.load(json_file)
+            self.api = data['PAPER-API-KEY']
+            self.secret_api = data['PAPER-SECRET-KEY']
+        return self.api, self.secret_api
 
-    def getBTCPrice(self):
-        """
-        Get the current price of BTC in USD.
-        """
-        return self.exchange.fetch_ticker('BTC/USD')['last'] 
+    def getWalletBalance(self, ticker='BTC'):
+        wallet_index = {'BNB': 0, 'BTC': 1, 'BUSD': 2,
+                        'ETH': 3, 'LTC': 4, 'TRX': 5, 'USDT': 6, 'XRP': 7}
+        try:
+            return float(self.wallet['balances'][wallet_index[ticker]]['free'])
+        except KeyError:
+            print(f'{ticker} not found in wallet')
 
-    def buy(self,price):
-        """
-        Buy the specified amount of the symbol at the specified price.\n\tparameters:\n\t\tprice: the price to buy at
-        """
-        self.wallet['BTC'] += self.wallet['USD'] / price
-        self.wallet['USD'] = 0
-
-    def sell(self,price):
-        """
-        Sell the specified amount of the symbol at the specified price.\n\tparameters:\n\t\tprice: the price to sell at
-        """
-        self.wallet['USD'] += self.wallet['BTC'] * price
-        self.wallet['BTC'] = 0
-
-    def buyOCO(self,price):
-        """
-        Buy the specified amount of the symbol at the specified price.\n\tparameters:\n\t\tprice: the price to buy at\n\t\tstoploss: the price to sell at if the price goes down
-        """
-        print('Buying at ' + str(price), 'Stoploss at ' + str(price / 1.002), 'Take Profit at ' + str(price * 1.005))
-        self.wallet['BTC'] += self.wallet['USD'] / price
-        self.wallet['USD'] = 0
+    def InPosition(self):
+        return self.getWalletBalance('BTC') != 0
 
 
-# p = PaperTrader()
-# p.buyOCO(p.getBTCPrice())
-# print(p.wallet)
+    def place_order(self,side):
+        if (side == 'BUY'):
+            order = self.client.order_market_buy( symbol='BTCUSDT',quoteOrderQty=self.getWalletBalance('USDT'))
+        elif (side == 'SELL'):
+            order = self.client.order_market_sell( symbol='BTCUSDT',quantity=self.getWalletBalance('BTC'))
+        return order
+
+
+p = PaperTrader()
+print(p.getWalletBalance('BTC'))
+print(p.InPosition())
