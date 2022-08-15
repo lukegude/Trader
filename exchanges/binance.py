@@ -31,5 +31,7 @@ params = {
 }
 
 
-# if __name__ == '__main__':
-#     b = BinanceAPI()
+# Add datetime to json
+def add_datetime(json):
+    json['datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return json
