@@ -1,3 +1,5 @@
+from datetime import datetime
+from sys import exc_info
 from exchanges.binance import BinanceAPI
 from PaperTrader import PaperTrader
 import joblib
@@ -6,6 +8,7 @@ import pandas as pd
 import pandas_ta as ta
 import time
 import json
+import ccxt
 
 
 class Timer():
@@ -79,37 +82,55 @@ class Trader:
         df['Trend'] = (df['macd_high'] <= 0) & (df['macd_low'] <= 0)
         df['Trend'] = df['Trend'].map({True: 'Below', False: 'Above'})
         df.drop(['macd_high', 'macd_low'], axis=1, inplace=True)
-        df['200EMA'] = ta.ema_indicator(df['close'], n=200)
+        df['200EMA'] = ta.ema(df['close'], n=200)
         df['STOCHRSIk'] = ta.stochrsi(df['close'], n=14)['STOCHRSIk_14_14_3_3']
         df['STOCHRSId'] = ta.stochrsi(df['close'], n=14)['STOCHRSId_14_14_3_3']
         df['BandWidth'] = ta.bbands(df['close'], n=20, k=2)['BBB_5_2.0']
+        df['BuySignal'] = ((df['close'] > df['200EMA']) & (df['MACD'] >= 1) & (
+            df['STOCHRSId'] >= 50) & (df['STOCHRSId'] >= 50))
+        df['SellSignal'] = ((df['MACD'] <= 0) & (df['STOCHRSId'] <= 50))
         df.dropna(inplace=True)
-        df['FIVE_CLOSE'] = df['close'].shift(-1)
-        df['TEN_CLOSE'] = df['close'].shift(-2)
-        df['TWENTY_CLOSE'] = df['close'].shift(-4)
-        df['THIRTY_CLOSE'] = df['close'].shift(-6)
         return df
 
-    def log_trade(prompt_list):
-        with open(os.getcwd() + '/trades.json', 'r+') as f:
-            data = json.load(f)
-            data['Trades'].append(prompt_list)
+    def log_trade(order):
+        with open('orders.json', 'r+') as f:
+            orders = json.load(f)
+            formatted_data = {"Date": datetime.now().strftime(
+                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty']}
+            orders['Trades'].append(formatted_data)
             f.seek(0)
-            json.dump(data, f, indent=4)
+            json.dump(orders, f)
+            f.truncate()
+
+    def clear_json(self):
+        with open('orders.json', 'w') as f:
+            json.dump({'Trades': []}, f)
             f.truncate()
 
     def start(self, paper=False):
         if paper:
             self.exchange_api = PaperTrader()
+            self.exchange = ccxt.binanceus()
             print('Loaded PaperTrader')
+        self.clear_json()
         while True:
             try:
                 df = self.get_data()
-
+                if df['BuySignal'].iloc[-1] == 'Buy' and self.exchange_api.in_position == False:
+                    print('Buy Signal')
+                    order = self.exchange_api.place_order('BUY')
+                    self.log_trade(order)
+                elif df['SellSignal'].iloc[-1] == 'Sell' and self.exchange_api.in_position == True:
+                    print('Sell Signal')
+                    order = self.exchange_api.place_order('SELL')
+                    self.log_trade(order)
+                else:
+                    print('No Signal')
             except Exception as e:
                 print(e)
+                exit()
 
 
 if __name__ == '__main__':
     trader = Trader()
-    trader.get_data()
+    trader.start(True)

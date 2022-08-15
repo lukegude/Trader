@@ -1,6 +1,7 @@
 from binance.client import Client
 import os
 import json
+from datetime import datetime
 
 
 class PaperTrader():
@@ -8,6 +9,9 @@ class PaperTrader():
         self.client = Client(self.GET_API_KEYS()[0], self.GET_API_KEYS()[1])
         self.client.API_URL = 'https://testnet.binance.vision/api'
         self.wallet = self.client.get_account()
+        self.in_position = False
+        self.exchange = 'Binance-Paper'
+        self.old_balance = None
 
     def GET_API_KEYS(self):
         # Open config/personal_config.json
@@ -28,15 +32,23 @@ class PaperTrader():
     def InPosition(self):
         return self.getWalletBalance('BTC') != 0
 
+    def log_paper_order(self,order):
+        with open('orders.json','r+') as f:
+            orders = json.load(f)
+            formatted_data = {"Date": datetime.now().strftime(
+                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty']}
+            orders['Trades'].append(formatted_data)
+            f.seek(0)
+            json.dump(orders,f)
+            f.truncate()
 
     def place_order(self,side):
-        if (side == 'BUY'):
-            order = self.client.order_market_buy( symbol='BTCUSDT',quoteOrderQty=self.getWalletBalance('USDT'))
-        elif (side == 'SELL'):
+        if (side.upper() == 'BUY'):
+            order = self.client.order_market_buy(
+                symbol='BTCUSDT', quoteOrderQty=self.getWalletBalance('USDT'))
+            self.in_position = True
+        elif (side.upper() == 'SELL'):
             order = self.client.order_market_sell( symbol='BTCUSDT',quantity=self.getWalletBalance('BTC'))
+            self.in_position = False
         return order
 
-
-p = PaperTrader()
-print(p.getWalletBalance('BTC'))
-print(p.InPosition())
