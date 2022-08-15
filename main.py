@@ -92,11 +92,11 @@ class Trader:
         df.dropna(inplace=True)
         return df
 
-    def log_trade(order):
+    def log_trade(self,order):
         with open('orders.json', 'r+') as f:
             orders = json.load(f)
             formatted_data = {"Date": datetime.now().strftime(
-                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty']}
+                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty'],"BTC":self.exchange_api.getWalletBalance('BTC'), "USD":self.exchange_api.getWalletBalance('USDT')}
             orders['Trades'].append(formatted_data)
             f.seek(0)
             json.dump(orders, f)

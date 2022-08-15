@@ -33,15 +33,19 @@ class PaperTrader():
         return self.getWalletBalance('BTC') != 0
 
     def log_paper_order(self,order):
-        with open('orders.json','r+') as f:
+        with open('orders.json', 'r+') as f:
             orders = json.load(f)
             formatted_data = {"Date": datetime.now().strftime(
-                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty']}
+                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty'], "BTC": self.getWalletBalance('BTC'), "USD": self.getWalletBalance('USDT')}
             orders['Trades'].append(formatted_data)
             f.seek(0)
-            json.dump(orders,f)
+            json.dump(orders, f)
             f.truncate()
 
+    def clear_json(self):
+        with open('orders.json', 'w') as f:
+            json.dump({'Trades': []}, f)
+            f.truncate()
     def place_order(self,side):
         if (side.upper() == 'BUY'):
             order = self.client.order_market_buy(
