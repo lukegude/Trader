@@ -116,11 +116,11 @@ class Trader:
         while True:
             try:
                 df = self.get_data()
-                if df['BuySignal'].iloc[-1] == 'Buy' and self.exchange_api.in_position == False:
+                if df['BuySignal'].iloc[-1] == True and self.exchange_api.in_position == False:
                     print('Buy Signal')
                     order = self.exchange_api.place_order('BUY')
                     self.log_trade(order)
-                elif df['SellSignal'].iloc[-1] == 'Sell' and self.exchange_api.in_position == True:
+                elif df['SellSignal'].iloc[-1] == True and self.exchange_api.in_position == True:
                     print('Sell Signal')
                     order = self.exchange_api.place_order('SELL')
                     self.log_trade(order)
