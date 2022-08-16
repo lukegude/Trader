@@ -32,7 +32,7 @@ class PaperTrader():
     def InPosition(self):
         return self.getWalletBalance('BTC') != 0
 
-    def log_paper_order(self,order):
+    def log_paper_order(self, order):
         with open('orders.json', 'r+') as f:
             orders = json.load(f)
             formatted_data = {"Date": datetime.now().strftime(
@@ -46,13 +46,15 @@ class PaperTrader():
         with open('orders.json', 'w') as f:
             json.dump({'Trades': []}, f)
             f.truncate()
-    def place_order(self,side):
-        if (side.upper() == 'BUY'):
+
+    def place_order(self, side):
+        order = None
+        if (side.upper() == 'BUY' and self.getWalletBalance('USDT') > 0):
             order = self.client.order_market_buy(
                 symbol='BTCUSDT', quoteOrderQty=self.getWalletBalance('USDT'))
             self.in_position = True
-        elif (side.upper() == 'SELL'):
-            order = self.client.order_market_sell( symbol='BTCUSDT',quantity=self.getWalletBalance('BTC'))
+        elif (side.upper() == 'SELL' and self.getWalletBalance('BTC') > 0):
+            order = self.client.order_market_sell(
+                symbol='BTCUSDT', quantity=self.getWalletBalance('BTC'))
             self.in_position = False
         return order
-

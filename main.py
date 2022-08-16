@@ -92,11 +92,11 @@ class Trader:
         df.dropna(inplace=True)
         return df
 
-    def log_trade(self,order):
+    def log_trade(self, order):
         with open('orders.json', 'r+') as f:
             orders = json.load(f)
             formatted_data = {"Date": datetime.now().strftime(
-                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty'],"BTC":self.exchange_api.getWalletBalance('BTC'), "USD":self.exchange_api.getWalletBalance('USDT')}
+                '%Y-%m-%d %H:%M:%S'), "Side": order['side'], "Balance": order['cummulativeQuoteQty'], "BTC": self.exchange_api.getWalletBalance('BTC'), "USD": self.exchange_api.getWalletBalance('USDT')}
             orders['Trades'].append(formatted_data)
             f.seek(0)
             json.dump(orders, f)
@@ -124,11 +124,11 @@ class Trader:
                     print('Sell Signal')
                     order = self.exchange_api.place_order('SELL')
                     self.log_trade(order)
-                else:
-                    print('No Signal')
             except Exception as e:
-                print(e)
-                exit()
+                if 'APIError' in str(e):
+                    print('TRADE ERROR: Trying again')
+                else:
+                    print(e)
 
 
 if __name__ == '__main__':
